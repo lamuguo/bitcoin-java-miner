@@ -3,17 +3,20 @@
 package net.sdiz.bitcoin;
 
 import net.sdiz.bitcoin.common.MinerConfig;
+import net.sdiz.bitcoin.hash.ScanHash;
 import net.sdiz.bitcoin.util.MiningUtil;
 
 import org.json.JSONException;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 /**
  * @author xiaofengguo@google.com (Xiaofeng Guo)
  *
  */
 public class Miner {
+  private static final Logger LOG = Logger.getLogger(Miner.class.getCanonicalName());
 
   /**
    * @param args
@@ -21,7 +24,9 @@ public class Miner {
    * @throws IOException 
    */
   public static void main(String[] args) throws IOException, JSONException {
+    ScanHash sh = new ScanHash();
     Work work = MiningUtil.fetchWork(new MinerConfig());
+    boolean found = sh.scan(work, 1, 100000000);
+    LOG.info("found = " + found);
   }
-
 }

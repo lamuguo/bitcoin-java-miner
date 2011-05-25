@@ -9,7 +9,7 @@ import org.apache.commons.codec.binary.Base64;
  * 
  */
 public class MinerConfig {
-	private final String jsonUrl = "http://deepbit.net:8332";
+	private final String jsonUrl = "http://mining.bitcoin.cz:8332";
 	private transient String authorization = null;
 	private final String username = "j16sdiz.gaeminer";
 	private final String password = "unconfiged";

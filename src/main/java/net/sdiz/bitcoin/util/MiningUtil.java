@@ -1,47 +1,72 @@
 package net.sdiz.bitcoin.util;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import net.sdiz.bitcoin.Work;
 import net.sdiz.bitcoin.common.MinerConfig;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.logging.Logger;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.InflaterInputStream;
 
 
 public class MiningUtil {
+  private static final Logger LOG = Logger.getLogger(MiningUtil.class.getCanonicalName());
 
-  public static Work fetchWork(MinerConfig config) throws IOException, JSONException {
-    JSONObject getwork = new JSONObject();
-    getwork.put("method", "getwork");
-    getwork.put("params", new JSONArray());
-    getwork.put("id", 0);
-
-    HttpClient client = new DefaultHttpClient();
-    HttpPost postRequest = new HttpPost(config.getJsonUrl());
-    postRequest.setEntity(new ByteArrayEntity(getwork.toString().getBytes()));
-    postRequest.addHeader("Authorization", config.getAuth());
+  public static Work fetchWork(MinerConfig config) throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    ObjectNode requestNode = mapper.createObjectNode();
+    requestNode.put("method", "getwork");
+    requestNode.putArray("params");
+    requestNode.put("id", 0);
     
-    HttpResponse response = client.execute(postRequest);
-    HttpEntity entity = response.getEntity();
-    if (entity != null) {
-      InputStream instream = entity.getContent();
-      int l;
-      byte[] tmp = new byte[2048];
-      while ((l = instream.read(tmp)) != -1) {
-        System.out.println(new String(tmp));
-      }
-    }
+    URL bitcoind = new URL(config.getJsonUrl());
+    HttpURLConnection connection = (HttpURLConnection) bitcoind.openConnection();
+    connection.setConnectTimeout(5000);
+    connection.setRequestProperty("Authorization", "Basic ajE2c2Rpei5nYWVtaW5lcjp1bmNvbmZpZ2Vk");
+    connection.setRequestProperty("Accept-Encoding", "gzip,deflate");
+    connection.setRequestProperty("Content-Type", "application/json");
+    connection.setDoOutput(true);
 
-    return new Work();
+    OutputStream requestStream = connection.getOutputStream();
+    Writer request = new OutputStreamWriter(requestStream);
+    request.write(requestNode.toString());
+    request.close();
+    requestStream.close();
+    LOG.info("Sent JSON request: " + requestNode.toString());
+
+    InputStream responseStream = null;
+    
+    LOG.info("xlongpolling = " + connection.getHeaderField("X-Long-Polling"));
+    
+    if (connection.getContentEncoding() != null) {
+      if (connection.getContentEncoding().equalsIgnoreCase("gzip")) {
+        LOG.info("gzip connection");
+        responseStream = new GZIPInputStream(connection.getInputStream());
+      } else if (connection.getContentEncoding().equalsIgnoreCase("deflate")) {
+        LOG.info("deflate connection");
+        responseStream = new InflaterInputStream(connection.getInputStream());
+      }
+    } else {
+      LOG.info("Normal connection");
+      responseStream = connection.getInputStream();
+    }
+    ObjectNode responseNode = (ObjectNode) mapper.readTree(responseStream);
+    LOG.info("Received JSON response: " + responseNode);
+    JsonNode result = responseNode.get("result");
+    return new Work(result.get("data").getTextValue(),
+        result.get("hash1").getTextValue(),
+        result.get("target").getTextValue(),
+        result.get("midstate").getTextValue());
   }
 
 }
