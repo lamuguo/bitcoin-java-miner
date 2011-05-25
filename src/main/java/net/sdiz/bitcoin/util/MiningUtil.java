@@ -1,19 +1,20 @@
 package net.sdiz.bitcoin.util;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import net.sdiz.bitcoin.Work;
 import net.sdiz.bitcoin.common.MinerConfig;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 
 public class MiningUtil {
@@ -25,8 +26,11 @@ public class MiningUtil {
     getwork.put("id", 0);
 
     HttpClient client = new DefaultHttpClient();
-    HttpGet getRequest = new HttpGet(config.getJsonUrl());
-    HttpResponse response = client.execute(getRequest);
+    HttpPost postRequest = new HttpPost(config.getJsonUrl());
+    postRequest.setEntity(new ByteArrayEntity(getwork.toString().getBytes()));
+    postRequest.addHeader("Authorization", config.getAuth());
+    
+    HttpResponse response = client.execute(postRequest);
     HttpEntity entity = response.getEntity();
     if (entity != null) {
       InputStream instream = entity.getContent();
