@@ -22,9 +22,16 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-    <groupId>org.json</groupId>
-    <artifactId>json</artifactId>
-    <version>20090211</version>
-</dependency>
+      <groupId>org.json</groupId>
+      <artifactId>json</artifactId>
+      <version>20090211</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.apache.httpcomponents</groupId>
+    	<artifactId>httpclient</artifactId>
+    	<version>4.1.1</version>
+    	<type>jar</type>
+    	<scope>compile</scope>
+    </dependency>
   </dependencies>
 </project>
