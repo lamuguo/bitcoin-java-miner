@@ -6,8 +6,6 @@ import net.sdiz.bitcoin.common.MinerConfig;
 import net.sdiz.bitcoin.hash.ScanHash;
 import net.sdiz.bitcoin.util.MiningUtil;
 
-import org.json.JSONException;
-
 import java.io.IOException;
 import java.util.logging.Logger;
 
@@ -23,10 +21,10 @@ public class Miner {
    * @throws JSONException 
    * @throws IOException 
    */
-  public static void main(String[] args) throws IOException, JSONException {
+  public static void main(String[] args) throws IOException {
     ScanHash sh = new ScanHash();
     Work work = MiningUtil.fetchWork(new MinerConfig());
-    boolean found = sh.scan(work, 1, 100000000);
-    LOG.info("found = " + found);
+    boolean found = sh.scan(work, 1, (1 << 30));
+    LOG.info("found = " + found + "work = " + work);
   }
 }

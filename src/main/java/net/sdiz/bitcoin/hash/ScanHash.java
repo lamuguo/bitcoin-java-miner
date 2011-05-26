@@ -2,45 +2,54 @@ package net.sdiz.bitcoin.hash;
 
 import static net.sdiz.bitcoin.hash.HexUtil.decode;
 import static net.sdiz.bitcoin.hash.HexUtil.encode;
+
 import net.sdiz.bitcoin.Work;
 
+import java.util.logging.Logger;
+
 public class ScanHash {
-	protected long hashed;
-	
-	public long getCount() {
-		long cnt = hashed;
-		hashed = 0;
-		return cnt;
-	}
+  private static final Logger LOG = Logger.getLogger(ScanHash.class.getCanonicalName());
 
-	public boolean scan(Work work, int start, int count) {
-		SHA256 sha256 = new SHA256();
+  protected long hashed;
 
-		int[] _data = decode(new int[16], work.data.substring(128));
-		int[] _midstate = decode(decode(new int[16], work.hash1), work.midstate);
+  public long getCount() {
+    long cnt = hashed;
+    hashed = 0;
+    return cnt;
+  }
 
-		int[] __state, __data, __hash1, __hash;
-		for (int nonce = start; nonce < start + count; nonce++) {
-			_data[3] = nonce; // NONCE is _data[3]
-			hashed++;
+  public boolean scan(Work work, int start, int count) {
+    SHA256 sha256 = new SHA256();
 
-			__state = new int[_midstate.length];
-			System.arraycopy(_midstate, 0, __state, 0, _midstate.length);
-			__data = _data;
+    int[] _data = decode(new int[16], work.data.substring(128));
+    int[] _midstate = decode(decode(new int[16], work.hash1), work.midstate);
 
-			sha256.processBlock(__state, __data);
-			__hash1 = __state;
+    int[] __state, __data, __hash1, __hash;
+    for (int nonce = start; nonce < start + count; nonce++) {
+      _data[3] = nonce; // NONCE is _data[3]
+      hashed++;
+      
+      if ((nonce & 0xFFFFF) == 13) {
+        LOG.info("nonce = " + nonce);
+      }
 
-			__state = SHA256.initState();
-			sha256.processBlock(__state, __hash1);
-			__hash = __state;
+      __state = new int[_midstate.length];
+      System.arraycopy(_midstate, 0, __state, 0, _midstate.length);
+      __data = _data;
 
-			if (__hash[7] == 0) {
-				work.data = work.data.substring(0, 128) + encode(__data);
-				return true;
-			}
-		}
+      sha256.processBlock(__state, __data);
+      __hash1 = __state;
 
-		return false;
-	}
+      __state = SHA256.initState();
+      sha256.processBlock(__state, __hash1);
+      __hash = __state;
+
+      if (__hash[7] == 0) {
+        work.data = work.data.substring(0, 128) + encode(__data);
+        return true;
+      }
+    }
+
+    return false;
+  }
 }
